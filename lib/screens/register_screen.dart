@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// ubah jadi statefulwidget
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -9,16 +8,12 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // kunci untukmemvalidasi dan mengonfirmasi form
   final _formKey = GlobalKey<FormState>();
-
-  // controller setiap field
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // method untuk membersihkan controller saat widget dihapus
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -31,36 +26,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Register'), backgroundColor: Colors.blue),
+      appBar: AppBar(
+        title: Text('Register'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        // mbungkus list view dengan form
         child: Form(
-          key: _formKey, // kait kunci sama form
+          key: _formKey,
           child: ListView(
             children: [
-              // Logo
-              Column(
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 80,
-                    color: Colors.blue,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'CitiAlShop',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: const Color.fromARGB(255, 78, 103, 248),
-                    ),
-                  ),
-                ],
+              // Logo Aplikasi
+              Image.asset(
+                'assets/logo3.png',
+                height: 150,
+                width: 150,
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 40),
 
-              // pake TextFormField untuk validasi
+              // Field Full Name
               TextFormField(
                 controller: _fullNameController,
                 decoration: InputDecoration(
@@ -69,7 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   prefixIcon: Icon(Icons.person),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Nama tidak boleh kosong';
                   }
                   return null;
@@ -77,6 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               SizedBox(height: 16),
 
+              // Field Email
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
@@ -96,7 +82,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
               SizedBox(height: 16),
-              
+
+              // Field Password
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
@@ -117,6 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               SizedBox(height: 16),
 
+              // Field Confirm Password
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: true,
@@ -129,7 +117,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   if (value == null || value.isEmpty) {
                     return 'Mohon konfirmasi password';
                   }
-                  // membandingkan dengan isi field password
                   if (value != _passwordController.text) {
                     return 'Password tidak cocok';
                   }
@@ -138,30 +125,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               SizedBox(height: 24),
 
+              // Tombol Register
               SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
-                    // logika untuk tombol register
-                    // 1. Jalankan validasi
                     if (_formKey.currentState!.validate()) {
-                      // 2. Jika valid, tampilkan notifikasi
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content: Text(
                                 'Registrasi untuk ${_fullNameController.text} berhasil!')),
                       );
 
-                      // 3. Pindah ke halaman login setelah 2 detik
-                      Future.delayed(Duration(seconds: 2), () {
-                        Navigator.pushNamed(context, '/login');
-                      });
+                      final registeredData = {
+                        'email': _emailController.text,
+                        'password': _passwordController.text,
+                        'name': _fullNameController.text, // Kirim juga nama
+                      };
+
+                      // Pindah ke halaman login dan kirim data
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/login',
+                        arguments: registeredData,
+                      );
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                  ),
                   child: Text(
                     'REGISTER',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -170,13 +164,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               SizedBox(height: 16),
 
+              // Link ke Halaman Login
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Already have an account? "),
+                  Text("Already have an account?"),
                   TextButton(
                     onPressed: () {
-                      //navigasi ke halaman login
                       Navigator.pushNamed(context, '/login');
                     },
                     child: Text('Login'),
