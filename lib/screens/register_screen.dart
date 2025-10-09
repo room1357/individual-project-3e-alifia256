@@ -1,7 +1,32 @@
 import 'package:flutter/material.dart';
 
-class RegisterScreen extends StatelessWidget {
+// ubah jadi statefulwidget
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  // kunci untukmemvalidasi dan mengonfirmasi form
+  final _formKey = GlobalKey<FormState>();
+
+  // controller setiap field
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  // method untuk membersihkan controller saat widget dihapus
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9,106 +34,157 @@ class RegisterScreen extends StatelessWidget {
       appBar: AppBar(title: Text('Register'), backgroundColor: Colors.blue),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
+        // mbungkus list view dengan form
+        child: Form(
+          key: _formKey, // kait kunci sama form
+          child: ListView(
+            children: [
+              // Logo
+              Column(
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 80,
+                    color: Colors.blue,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'CitiAlShop',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: const Color.fromARGB(255, 78, 103, 248),
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(Icons.person_add, size: 50, color: Colors.white),
-            ),
-            SizedBox(height: 32),
+              const SizedBox(height: 50),
 
-            // Full Name Field
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Full Name',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Email Field
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Username Field
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.account_circle),
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Password Field
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Confirm Password Field
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Confirm Password',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline),
-              ),
-            ),
-            SizedBox(height: 24),
-
-            // Register Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Handle register
+              // pake TextFormField untuk validasi
+              TextFormField(
+                controller: _fullNameController,
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Nama tidak boleh kosong';
+                  }
+                  return null;
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(vertical: 16),
+              ),
+              SizedBox(height: 16),
+
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
                 ),
-                child: Text(
-                  'REGISTER',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Email tidak boleh kosong';
+                  }
+                  if (!value.contains('@') || !value.contains('.')) {
+                    return 'Masukkan format email yang valid';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Password tidak boleh kosong';
+                  }
+                  if (value.length < 6) {
+                    return 'Password minimal 6 karakter';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+
+              TextFormField(
+                controller: _confirmPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Mohon konfirmasi password';
+                  }
+                  // membandingkan dengan isi field password
+                  if (value != _passwordController.text) {
+                    return 'Password tidak cocok';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // logika untuk tombol register
+                    // 1. Jalankan validasi
+                    if (_formKey.currentState!.validate()) {
+                      // 2. Jika valid, tampilkan notifikasi
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(
+                                'Registrasi untuk ${_fullNameController.text} berhasil!')),
+                      );
+
+                      // 3. Pindah ke halaman login setelah 2 detik
+                      Future.delayed(Duration(seconds: 2), () {
+                        Navigator.pushNamed(context, '/login');
+                      });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text(
+                    'REGISTER',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 16),
+              SizedBox(height: 16),
 
-            // Login Link
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text("Already have an account? "),
-                TextButton(
-                  onPressed: () {
-                    // Navigate to login
-                  },
-                  child: Text('Login'),
-                ),
-              ],
-            ),
-          ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("Already have an account? "),
+                  TextButton(
+                    onPressed: () {
+                      //navigasi ke halaman login
+                      Navigator.pushNamed(context, '/login');
+                    },
+                    child: Text('Login'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
