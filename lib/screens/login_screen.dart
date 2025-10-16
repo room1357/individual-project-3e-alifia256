@@ -45,11 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 child: Center(
-                  child: Image.asset(
-                    'assets/logo2.png',
-                    height: 150,
-                    width: 150,
-                  ),
+                  child: Image.asset('assets/logo2.png', height: 150, width: 150),
                 ),
               ),
               const SizedBox(height: 30),
@@ -108,11 +104,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             return;
                           }
                           if (_formKey.currentState!.validate()) {
-                            // PINDAH KE HOME DAN KIRIM NAMA
+                            // Siapkan data lengkap untuk dikirim ke home
+                            final userData = {
+                              'name': registeredName ?? 'User',
+                              'email': registeredEmail,
+                            };
                             Navigator.pushReplacementNamed(
                               context,
                               '/home',
-                              arguments: registeredName,
+                              arguments: userData, // Kirim data lengkap
                             );
                           }
                         },

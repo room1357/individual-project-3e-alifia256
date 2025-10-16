@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/register_screen.dart';
-
+import 'package:pemrograman_mobile/screens/about_screen.dart'; // Tambah import
+import 'package:pemrograman_mobile/screens/home_screen.dart';
+import 'package:pemrograman_mobile/screens/login_screen.dart';
+import 'package:pemrograman_mobile/screens/profile_screen.dart'; // Tambah import
+import 'package:pemrograman_mobile/screens/register_screen.dart';
+import 'package:pemrograman_mobile/screens/settings_screen.dart'; // Tambah import
 
 void main() {
   runApp(const MyApp());
@@ -14,15 +16,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      // Gunakan initialRoute agar konsisten
-      initialRoute: '/login',
+      title: 'CityFood',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      initialRoute: '/register',
+      // Daftarkan semua rute baru di sini
       routes: {
-        '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
+        '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/settings': (context) => const SettingsScreen(), // Rute baru
+        '/about': (context) => const AboutScreen(), // Rute baru
       },
     );
   }
