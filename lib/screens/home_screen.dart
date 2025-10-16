@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pemrograman_mobile/screens/categories_screen.dart';
 import 'package:pemrograman_mobile/screens/profile_screen.dart';
+import 'package:pemrograman_mobile/screens/expense_screen.dart'; // BARU: Impor halaman expense
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // ... (Fungsi _showLogoutDialog tetap sama, tidak perlu diubah)
   Future<void> _showLogoutDialog(BuildContext context) async {
     return showDialog<void>(
       context: context,
@@ -52,9 +54,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final userName = userData?['name'] ?? 'User';
     final userEmail = userData?['email'] ?? 'user@email.com';
 
+    // UBAH: Tambahkan ExpenseScreen ke dalam daftar halaman
     final List<Widget> _pages = <Widget>[
       const HomeContent(),
       const CategoriesScreen(),
+      const ExpenseScreen(), // HALAMAN BARU ANDA
       ProfileScreen(userName: userName, userEmail: userEmail),
     ];
 
@@ -75,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: Drawer(
+        // ... (Isi Drawer tetap sama, tidak perlu diubah)
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -118,14 +123,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: _pages.elementAt(_selectedIndex),
+      // UBAH: Tambahkan item baru di BottomNavigationBar
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Categories'),
+          BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Expenses'), // ITEM BARU
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey, // Tambahkan ini agar item non-aktif terlihat
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
       ),
@@ -133,14 +141,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// Widget HomeContent dan _buildProductCard tetap sama, tidak perlu diubah
 class HomeContent extends StatelessWidget {
   const HomeContent({super.key});
-
+  // ... (Isi HomeContent tetap sama)
   final List<Map<String, String>> products = const [
     {
       "name": "Sate Ayam",
       "price": "Rp 25.000",
-      "image": "assets/Mieayam.jpeg",
+      "image": "assets/Sate.jpeg",
     },
     {
       "name": "Nasi Goreng Spesial",
@@ -155,7 +164,7 @@ class HomeContent extends StatelessWidget {
     {
       "name": "Mie Ayam",
       "price": "Rp 20.000",
-      "image": "assets/Mieayam.jpeg",
+      "image": "assets/MieAyam.jpeg",
     },
     {
       "name": "Jus Alpukat",
@@ -175,17 +184,14 @@ class HomeContent extends StatelessWidget {
           mainAxisSpacing: 10,
           childAspectRatio: 0.75,
         ),
-        // UBAH: Gunakan panjang daftar produk
         itemCount: products.length,
         itemBuilder: (context, index) {
-          // UBAH: Kirim data produk ke card
           return _buildProductCard(products[index]);
         },
       ),
     );
   }
 
-  // UBAH: Fungsi ini sekarang menerima satu objek produk
   Widget _buildProductCard(Map<String, String> product) {
     return Card(
       elevation: 3,
@@ -197,12 +203,10 @@ class HomeContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              // UBAH: Gunakan Image.asset untuk menampilkan gambar lokal
               child: Image.asset(
-                product['image']!, // Ambil path gambar dari data produk
+                product['image']!,
                 fit: BoxFit.cover,
                 width: double.infinity,
-                // Error builder untuk menangani jika gambar tidak ditemukan
                 errorBuilder: (context, error, stackTrace) {
                   return const Center(
                       child: Icon(Icons.fastfood, size: 40, color: Colors.grey));
@@ -215,13 +219,13 @@ class HomeContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product['name']!, // Ambil nama dari data produk
+                    product['name']!,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     maxLines: 2,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    product['price']!, // Ambil harga dari data produk
+                    product['price']!,
                     style: const TextStyle(
                         fontSize: 14,
                         color: Colors.deepOrange,
