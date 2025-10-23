@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
-
-import 'package:intl/date_symbol_data_local.dart'; 
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:pemrograman_mobile/screens/about_screen.dart';
 import 'package:pemrograman_mobile/screens/home_screen.dart';
 import 'package:pemrograman_mobile/screens/login_screen.dart';
 import 'package:pemrograman_mobile/screens/register_screen.dart';
 import 'package:pemrograman_mobile/screens/settings_screen.dart';
+import 'package:pemrograman_mobile/services/expense_service.dart';
+import 'package:pemrograman_mobile/services/storage_service.dart';
 
-// UBAH: Fungsi main menjadi async
-void main() async { 
-  // BARU: Pastikan Flutter siap sebelum menjalankan kode async
-  WidgetsFlutterBinding.ensureInitialized(); 
+// Buat service sebagai singleton (satu instance)
+// agar bisa diakses dari mana saja.
+final storageService = StorageService();
+final expenseService = ExpenseService(storageService);
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
   
-  // BARU: Muat data format tanggal untuk locale 'id_ID' (Indonesia)
-  await initializeDateFormatting('id_ID', null); 
-
+  // PENTING: Muat data dari memori saat aplikasi dimulai
+  await expenseService.init(); 
+  
   runApp(const MyApp());
 }
 
@@ -36,6 +41,9 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/about': (context) => const AboutScreen(),
+        
+        // Kita tidak perlu mendaftarkan halaman add/edit/stats
+        // karena mereka akan dibuka dari dalam ExpenseScreen
       },
     );
   }

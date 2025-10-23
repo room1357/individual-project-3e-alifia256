@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pemrograman_mobile/screens/categories_screen.dart';
+import 'package:pemrograman_mobile/main.dart';
 import 'package:pemrograman_mobile/screens/profile_screen.dart';
-import 'package:pemrograman_mobile/screens/expense_screen.dart'; // BARU: Impor halaman expense
+import 'package:pemrograman_mobile/screens/expense_screen.dart';
+import 'package:pemrograman_mobile/screens/order_summary_screen.dart';
+import 'package:pemrograman_mobile/utils/currency_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,8 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ... (Fungsi _showLogoutDialog tetap sama, tidak perlu diubah)
   Future<void> _showLogoutDialog(BuildContext context) async {
+
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final userData =
@@ -54,16 +57,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final userName = userData?['name'] ?? 'User';
     final userEmail = userData?['email'] ?? 'user@email.com';
 
-    // UBAH: Tambahkan ExpenseScreen ke dalam daftar halaman
-    final List<Widget> _pages = <Widget>[
-      const HomeContent(),
-      const CategoriesScreen(),
-      const ExpenseScreen(), // HALAMAN BARU ANDA
-      ProfileScreen(userName: userName, userEmail: userEmail),
+    // UBAH: Hapus CategoriesScreen dari daftar halaman
+    final List<Widget> pages = <Widget>[
+      HomeContent(key: UniqueKey()), // Indeks 0: Home
+      const ExpenseScreen(),       // Indeks 1: Expenses
+      ProfileScreen(userName: userName, userEmail: userEmail), // Indeks 2: Profile
     ];
 
     return Scaffold(
       appBar: AppBar(
+        // ... (AppBar tetap sama)
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         title: Row(
@@ -79,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: Drawer(
-        // ... (Isi Drawer tetap sama, tidak perlu diubah)
+        // ... (Drawer tetap sama)
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -122,18 +125,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: _pages.elementAt(_selectedIndex),
-      // UBAH: Tambahkan item baru di BottomNavigationBar
+      body: pages.elementAt(_selectedIndex),
+
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Categories'),
-          BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Expenses'), // ITEM BARU
+          BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Expenses'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey, // Tambahkan ini agar item non-aktif terlihat
+        unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
       ),
@@ -141,99 +143,196 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Widget HomeContent dan _buildProductCard tetap sama, tidak perlu diubah
-class HomeContent extends StatelessWidget {
+
+class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
-  // ... (Isi HomeContent tetap sama)
-  final List<Map<String, String>> products = const [
-    {
-      "name": "Sate Ayam",
-      "price": "Rp 25.000",
-      "image": "assets/Sate.jpeg",
-    },
-    {
-      "name": "Nasi Goreng Spesial",
-      "price": "Rp 30.000",
-      "image": "assets/NasiGorengSpesial.jpeg",
-    },
-    {
-      "name": "Es Teh Manis",
-      "price": "Rp 5.000",
-      "image": "assets/EsTeh.jpeg",
-    },
-    {
-      "name": "Mie Ayam",
-      "price": "Rp 20.000",
-      "image": "assets/MieAyam.jpeg",
-    },
-    {
-      "name": "Jus Alpukat",
-      "price": "Rp 15.000",
-      "image": "assets/JusAlpukat.jpeg",
-    },
-  ];
+
+  @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+  final List<Map<String, dynamic>> _cart = [];
+  double _totalPrice = 0.0;
+
+  void _toggleProduct(Map<String, dynamic> product) {
+    setState(() {
+      if (_cart.contains(product)) {
+        _cart.remove(product);
+        _totalPrice -= product['price'];
+      } else {
+        _cart.add(product);
+        _totalPrice += product['price'];
+      }
+    });
+  }
+
+  void _goToCheckout() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => OrderSummaryScreen(
+          cartItems: _cart,
+          total: _totalPrice,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      setState(() {
+        _cart.clear();
+        _totalPrice = 0.0;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 0.75,
+    final products = expenseService.catalogProducts;
+    
+    return Stack(
+      children: [
+        GridView.builder(
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 80),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.75,
+          ),
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            final product = products[index];
+            final isSelected = _cart.contains(product);
+            
+            return _buildProductCard(product, isSelected);
+          },
         ),
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          return _buildProductCard(products[index]);
-        },
-      ),
+
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 300),
+          bottom: _cart.isEmpty ? -100 : 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade800,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_cart.length} Item Dipilih',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      CurrencyUtils.format(_totalPrice),
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                  onPressed: _goToCheckout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.blue.shade800,
+                  ),
+                  child: const Row(
+                    children: [
+                      Text('Next'),
+                      Icon(Icons.arrow_forward_ios, size: 16),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+        )
+      ],
     );
   }
 
-  Widget _buildProductCard(Map<String, String> product) {
+  Widget _buildProductCard(Map<String, dynamic> product, bool isSelected) {
     return Card(
       elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: isSelected ? Colors.blue : Colors.transparent,
+          width: 2,
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {},
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        onTap: () => _toggleProduct(product),
+        child: Stack(
           children: [
-            Expanded(
-              child: Image.asset(
-                product['image']!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Center(
-                      child: Icon(Icons.fastfood, size: 40, color: Colors.grey));
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product['name']!,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    maxLines: 2,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Image.asset(
+                    product['image']!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                          child: Icon(Icons.fastfood, size: 40, color: Colors.grey));
+                    },
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    product['price']!,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.deepOrange,
-                        fontWeight: FontWeight.w600),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product['name']!,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        CurrencyUtils.format(product['price']),
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.deepOrange,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+            
+            if (isSelected)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
+                ),
+              )
           ],
         ),
       ),

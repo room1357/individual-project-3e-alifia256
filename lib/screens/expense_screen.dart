@@ -1,10 +1,17 @@
 // lib/screens/expense_screen.dart
-import 'package:intl/intl.dart';
-import 'package:flutter/material.dart';
-import '../logic/expense_manager.dart';
+
+import 'package:flutter/material.dart' hide DateUtils;
+import 'package:pemrograman_mobile/main.dart';
 import '../models/expense.dart';
+import 'add_expense_screen.dart'; // Anda bisa hapus import ini jika tidak terpakai lagi
+import 'category_screen.dart';
+import 'edit_expense_screen.dart';
+import 'statistics_screen.dart';
+import '../utils/currency_utils.dart';
+import '../utils/date_utils.dart';
 
 class ExpenseScreen extends StatefulWidget {
+  // ... (sisa kode StatefulWidget tetap sama)
   const ExpenseScreen({super.key});
 
   @override
@@ -12,188 +19,128 @@ class ExpenseScreen extends StatefulWidget {
 }
 
 class _ExpenseScreenState extends State<ExpenseScreen> {
-  // Ambil data asli sekali saja
-  final List<Expense> _allExpenses = ExpenseManager.expenses;
-  
-  // State untuk data yang akan ditampilkan
-  List<Expense> _filteredExpenses = [];
-  String _selectedCategory = 'Semua';
-  final TextEditingController _searchController = TextEditingController();
+  // ... (semua kode state tetap sama)
+  final _expenseService = expenseService;
+  late List<Expense> _displayedExpenses;
 
   @override
   void initState() {
     super.initState();
-    // Awalnya, tampilkan semua data
-    _filteredExpenses = _allExpenses;
+    _displayedExpenses = _expenseService.expenses;
   }
 
-  // Fungsi utama untuk memfilter data berdasarkan pencarian dan kategori
-  void _filterExpenses() {
-    final keyword = _searchController.text.toLowerCase();
-    
+  void _refreshExpenses() {
     setState(() {
-      _filteredExpenses = _allExpenses.where((expense) {
-        final matchesSearch = keyword.isEmpty ||
-            expense.title.toLowerCase().contains(keyword) ||
-            expense.description.toLowerCase().contains(keyword);
-        
-        final matchesCategory = _selectedCategory == 'Semua' ||
-            expense.category == _selectedCategory;
-        
-        return matchesSearch && matchesCategory;
-      }).toList();
+      _displayedExpenses = _expenseService.expenses;
     });
+  }
+
+  // --- Navigasi ---
+  void _navigateAndRefresh(Widget page) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (ctx) => page),
+    );
+    if (result == true) {
+      _refreshExpenses();
+    }
+  }
+  
+  // HAPUS FUNGSI _navigateToAddExpense (ATAU BIARKAN JIKA MASIH DIPERLUKAN UNTUK DEBUG)
+  
+  void _navigateToEditExpense(Expense expense) => _navigateAndRefresh(
+    EditExpenseScreen(expenseService: _expenseService, expenseToEdit: expense)
+  );
+  
+  void _navigateToCategories() => _navigateAndRefresh(
+    CategoryScreen(expenseService: _expenseService)
+  );
+  
+  void _navigateToStats() => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (ctx) => StatisticsScreen(expenseService: _expenseService))
+  );
+
+  // --- Aksi ---
+  void _deleteExpense(String id) async {
+    // ... (fungsi delete tetap sama)
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Data'),
+        content: const Text('Apakah Anda yakin ingin menghapus jajan ini?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Hapus')),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _expenseService.deleteExpense(id);
+      _refreshExpenses();
+    }
+  }
+  
+  void _exportData() async {
+    // ... (fungsi export tetap sama)
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final result = await _expenseService.exportToCsv();
+    scaffoldMessenger.showSnackBar(SnackBar(content: Text(result ?? 'Ekspor dibatalkan.')));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Daftar kategori disesuaikan dengan studi kasus
-    final categories = ['Semua', 'Makanan Berat', 'Minuman', 'Cemilan'];
-
-    return Column(
-      children: [
-        // 1. Search Bar
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: TextField(
-            controller: _searchController,
-            onChanged: (value) => _filterExpenses(),
-            decoration: const InputDecoration(
-              hintText: 'Cari riwayat jajan...',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        // ... (AppBar tetap sama)
+        automaticallyImplyLeading: false, 
+        title: const Text('Jurnal Jajan'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: _navigateToStats,
+            tooltip: 'Statistik',
           ),
-        ),
-
-        // 2. Filter Kategori
-        Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: categories.map((category) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(category),
-                selected: _selectedCategory == category,
-                onSelected: (selected) {
-                  setState(() {
-                    _selectedCategory = category;
-                    _filterExpenses();
-                  });
-                },
-              ),
-            )).toList(),
+          IconButton(
+            icon: const Icon(Icons.category),
+            onPressed: _navigateToCategories,
+            tooltip: 'Kelola Kategori',
           ),
-        ),
-
-        // 3. Ringkasan Statistik
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatCard('Total', _calculateTotal(_filteredExpenses)),
-              _buildStatCard('Jumlah', '${_filteredExpenses.length} item'),
-              _buildStatCard('Rata-rata', _calculateAverage(_filteredExpenses)),
-            ],
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: _exportData,
+            tooltip: 'Ekspor ke CSV',
           ),
-        ),
-
-        // 4. Daftar Pengeluaran
-        Expanded(
-          child: _filteredExpenses.isEmpty
-              ? const Center(child: Text('Tidak ada pengeluaran ditemukan.'))
-              : ListView.builder(
-                  itemCount: _filteredExpenses.length,
-                  itemBuilder: (context, index) {
-                    final expense = _filteredExpenses[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: _getCategoryColor(expense.category),
-                          child: Icon(_getCategoryIcon(expense.category), color: Colors.white),
-                        ),
-                        title: Text(expense.title),
-                        subtitle: Text('${expense.category} • ${expense.formattedDate}'),
-                        trailing: Text(
-                          expense.formattedAmount,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-                        ),
-                        onTap: () => _showExpenseDetails(context, expense),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  // --- WIDGET & METHOD HELPER ---
-
-  Widget _buildStatCard(String label, String value) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-  
-  String _calculateTotal(List<Expense> expenses) {
-    final total = expenses.fold<double>(0, (sum, item) => sum + item.amount);
-    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(total);
-  }
-
-  String _calculateAverage(List<Expense> expenses) {
-    if (expenses.isEmpty) return 'Rp 0';
-    final total = expenses.fold<double>(0, (sum, item) => sum + item.amount);
-    final average = total / expenses.length;
-    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(average);
-  }
-
-  void _showExpenseDetails(BuildContext context, Expense expense) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(expense.title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text(expense.formattedAmount, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
-            const SizedBox(height: 16),
-            Text('Kategori: ${expense.category}'),
-            Text('Tanggal: ${expense.formattedDate}'),
-            const SizedBox(height: 8),
-            const Divider(),
-            Text(expense.description),
-          ],
-        ),
+        ],
       ),
-    );
-  }
-  
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Makanan Berat': return Icons.ramen_dining;
-      case 'Minuman': return Icons.local_cafe;
-      case 'Cemilan': return Icons.icecream;
-      default: return Icons.fastfood;
-    }
-  }
+      body: _displayedExpenses.isEmpty
+          ? const Center(child: Text('Belum ada jajan.'))
+          : ListView.builder(
+              // ... (ListView.builder tetap sama)
+              itemCount: _displayedExpenses.length,
+              itemBuilder: (context, index) {
+                final expense = _displayedExpenses[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: expense.category.color,
+                      child: Icon(expense.category.icon, color: Colors.white),
+                    ),
+                    title: Text(expense.title),
+                    subtitle: Text(DateUtils.format(expense.date)),
+                    trailing: Text(
+                      CurrencyUtils.format(expense.amount),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                    ),
+                    onTap: () => _navigateToEditExpense(expense),
+                    onLongPress: () => _deleteExpense(expense.id),
+                  ),
+                );
+              },
+            ),
 
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Makanan Berat': return Colors.orange;
-      case 'Minuman': return Colors.lightBlue;
-      case 'Cemilan': return Colors.pink;
-      default: return Colors.grey;
-    }
+    );
   }
 }
